@@ -1,31 +1,35 @@
-from flask import Flask, render_template, request, redirect, url_for, session
+from flask import Flask, render_template, request, redirect, url_for, session, send_file
 import os
 import re
 import random
 import pandas as pd
 from datetime import datetime
-
+from io import BytesIO
 
 app = Flask(__name__)
 
-# Session ашиглана
-app.secret_key = "shalgalt-system-2026"
+# =========================================================
+# SESSION
+# =========================================================
 
+app.secret_key = "shalgalt-system-2026"
 
 # =========================================================
 # ТОХИРГОО
 # =========================================================
 
-BASE_DIR = os.path.dirname(
-    os.path.abspath(__file__)
-)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 QUESTION_COUNT = 10
-
 EXAM_MINUTES = 10
-
 PASS_SCORE = 8
 
+# Admin нууц үг
+# Render дээр ADMIN_PASSWORD Environment Variable болгож болно.
+ADMIN_PASSWORD = os.environ.get(
+    "ADMIN_PASSWORD",
+    "admin2026"
+)
 
 # =========================================================
 # ШАЛГАЛТЫН ФАЙЛУУД
@@ -44,9 +48,7 @@ EXAM_FILES = {
         "Нарядын систем",
         "questions.txt"
     )
-
 }
-
 
 # =========================================================
 # EXCEL ФАЙЛ
@@ -56,7 +58,6 @@ RESULT_FILE = os.path.join(
     BASE_DIR,
     "results.xlsx"
 )
-
 
 # =========================================================
 # TXT ФАЙЛ УНШИХ
@@ -71,13 +72,11 @@ def read_file(filename):
 
         return ""
 
-
     encodings = [
         "utf-8-sig",
         "utf-8",
         "cp1251"
     ]
-
 
     for encoding in encodings:
 
@@ -94,7 +93,6 @@ def read_file(filename):
         except UnicodeDecodeError:
 
             pass
-
 
     return ""
 
@@ -122,13 +120,10 @@ def read_questions(filename):
 
     text = read_file(filename)
 
-
     if not text:
 
         return []
 
-
-    # Windows мөр
     text = text.replace(
         "\r\n",
         "\n"
@@ -139,61 +134,38 @@ def read_questions(filename):
         "\n"
     )
 
-
     lines = text.split("\n")
-
-
-    # =====================================================
-    # ЭХЛЭЛИЙН SPACE-УУДЫГ АРИЛГАНА
-    # =====================================================
 
     lines = [
         line.strip()
         for line in lines
     ]
 
-
     # =====================================================
-    # АСУУЛТЫН БЛОК ҮҮСГЭХ
-    #
-    # 1. ...
-    # 2. ...
-    # 3. ...
-    #
+    # АСУУЛТЫН БЛОК
     # =====================================================
 
     blocks = []
 
     current = []
 
-
     for line in lines:
 
         if not line:
-
             continue
-
-
-        # Зөвхөн:
-        # 1. Асуулт
-        # 2. Асуулт
-        # гэх мэт үндсэн асуултыг танина
 
         match = re.match(
             r"^(\d+)\.\s+(.+)",
             line
         )
 
-
         if match:
 
-            # Өмнөх блок
             if current:
 
                 blocks.append(
                     current
                 )
-
 
             current = [line]
 
@@ -203,17 +175,13 @@ def read_questions(filename):
 
                 current.append(line)
 
-
-    # Сүүлийн блок
     if current:
 
         blocks.append(
             current
         )
 
-
     questions = []
-
 
     # =====================================================
     # БЛОК БҮР
@@ -222,15 +190,12 @@ def read_questions(filename):
     for block in blocks:
 
         if len(block) < 3:
-
             continue
-
 
         first_line = block[0]
 
-
         # =================================================
-        # АСУУЛТЫН ТЕКСТ
+        # АСУУЛТ
         # =================================================
 
         question_match = re.match(
@@ -238,11 +203,8 @@ def read_questions(filename):
             first_line
         )
 
-
         if not question_match:
-
             continue
-
 
         question_text = (
             question_match
@@ -250,15 +212,12 @@ def read_questions(filename):
             .strip()
         )
 
-
         # =================================================
         # ЗӨВ ХАРИУЛТ
         # =================================================
 
         correct = None
-
         correct_position = -1
-
 
         for i, line in enumerate(block):
 
@@ -267,7 +226,6 @@ def read_questions(filename):
                 line,
                 re.IGNORECASE
             )
-
 
             if match:
 
@@ -281,26 +239,20 @@ def read_questions(filename):
 
                 break
 
-
-        # Зөв хариулт олдохгүй бол
         if not correct:
-
             continue
 
-
         # =================================================
-        # A B C D СОНГОЛТ
+        # A B C D
         # =================================================
 
         answer_lines = block[
             1:correct_position
         ]
 
-
         options = {}
 
         current_letter = None
-
 
         for line in answer_lines:
 
@@ -310,7 +262,6 @@ def read_questions(filename):
                 re.IGNORECASE
             )
 
-
             if option_match:
 
                 letter = (
@@ -319,50 +270,30 @@ def read_questions(filename):
                     .upper()
                 )
 
-
                 value = (
                     option_match
                     .group(2)
                     .strip()
                 )
 
-
                 options[letter] = value
 
                 current_letter = letter
 
-
             else:
 
-                # Сонголтын текст олон мөртэй байвал
                 if current_letter:
 
                     options[current_letter] += (
                         " " + line
                     )
 
-
-        # =================================================
-        # 3-ААС ДООШ СОНГОЛТ БОЛ БУРУУ
-        # =================================================
-
+        # 3 эсвэл 4 сонголт зөвшөөрнө
         if len(options) < 3:
-
             continue
-
-
-        # =================================================
-        # ЗӨВ ХАРИУЛТ СОНГОЛТД БАЙГАА ЭСЭХ
-        # =================================================
 
         if correct not in options:
-
             continue
-
-
-        # =================================================
-        # АСУУЛТ ҮҮСГЭХ
-        # =================================================
 
         question = {
 
@@ -405,17 +336,14 @@ def read_questions(filename):
 
             "correct":
                 correct
-
         }
-
 
         questions.append(
             question
         )
 
-
     # =====================================================
-    # ID ӨГӨХ
+    # ID
     # =====================================================
 
     for i, question in enumerate(
@@ -425,13 +353,11 @@ def read_questions(filename):
 
         question["id"] = i
 
-
     print()
     print("=" * 60)
     print("Файл:", filename)
     print("Нийт зөв уншсан асуулт:", len(questions))
     print("=" * 60)
-
 
     return questions
 
@@ -462,35 +388,30 @@ def select_exam():
         "exam_type"
     )
 
-
     if exam_type not in EXAM_FILES:
 
         return redirect(
             url_for("index")
         )
 
-
     questions = read_questions(
         EXAM_FILES[exam_type]
     )
 
-
-    # 10-аас дээш байх
     if len(questions) < QUESTION_COUNT:
 
         return render_template(
             "error.html",
             message=(
                 f"{exam_type} шалгалтад "
-                f"{len(questions)} асуулт танигдсан байна. "
+                f"{len(questions)} асуулт "
+                f"танигдсан байна. "
                 f"Хамгийн багадаа 10 асуулт "
                 f"шаардлагатай."
             )
         )
 
-
     session["exam_type"] = exam_type
-
 
     return redirect(
         url_for("info")
@@ -498,7 +419,7 @@ def select_exam():
 
 
 # =========================================================
-# МЭДЭЭЛЭЛ ОРУУЛАХ
+# МЭДЭЭЛЭЛ
 # =========================================================
 
 @app.route("/info")
@@ -508,18 +429,15 @@ def info():
         "exam_type"
     )
 
-
     if not exam_type:
 
         return redirect(
             url_for("index")
         )
 
-
     questions = read_questions(
         EXAM_FILES[exam_type]
     )
-
 
     return render_template(
         "info.html",
@@ -533,7 +451,6 @@ def info():
         question_count=QUESTION_COUNT,
 
         exam_minutes=EXAM_MINUTES
-
     )
 
 
@@ -552,17 +469,14 @@ def start():
         ""
     ).strip()
 
-
     position = request.form.get(
         "position",
         ""
     ).strip()
 
-
     exam_type = session.get(
         "exam_type"
     )
-
 
     if not exam_type:
 
@@ -570,27 +484,19 @@ def start():
             url_for("index")
         )
 
-
     if not name or not position:
 
         return redirect(
             url_for("info")
         )
 
-
-    # =====================================================
-    # БҮХ АСУУЛТ
-    # =====================================================
-
     all_questions = read_questions(
         EXAM_FILES[exam_type]
     )
 
-
     if len(all_questions) < QUESTION_COUNT:
 
         return "Асуулт хүрэлцэхгүй байна."
-
 
     # =====================================================
     # САНАМСАРГҮЙ 10
@@ -600,7 +506,6 @@ def start():
         all_questions,
         QUESTION_COUNT
     )
-
 
     # =====================================================
     # SESSION
@@ -614,7 +519,6 @@ def start():
 
     session["started"] = True
 
-
     return render_template(
         "exam.html",
 
@@ -627,7 +531,6 @@ def start():
         questions=questions,
 
         exam_minutes=EXAM_MINUTES
-
     )
 
 
@@ -649,30 +552,25 @@ def submit():
             url_for("index")
         )
 
-
     name = session.get(
         "name",
         ""
     )
-
 
     position = session.get(
         "position",
         ""
     )
 
-
     exam_type = session.get(
         "exam_type",
         ""
     )
 
-
     questions = session.get(
         "questions",
         []
     )
-
 
     # =====================================================
     # ОНОО
@@ -680,46 +578,45 @@ def submit():
 
     score = 0
 
-
     for question in questions:
 
         question_id = str(
             question["id"]
         )
 
-
         answer = request.form.get(
             "q_" + question_id,
             ""
         ).upper()
 
-
         correct = question[
             "correct"
         ].upper()
-
 
         if answer == correct:
 
             score += 1
 
-
     total = len(
         questions
     )
-
 
     # =====================================================
     # ХУВЬ
     # =====================================================
 
-    percentage = round(
-        score / total * 100
-    )
+    if total > 0:
 
+        percentage = round(
+            score / total * 100
+        )
+
+    else:
+
+        percentage = 0
 
     # =====================================================
-    # ТЭНЦСЭН
+    # ҮР ДҮН
     # =====================================================
 
     if score >= PASS_SCORE:
@@ -729,7 +626,6 @@ def submit():
     else:
 
         result = "ТЭНЦЭЭГҮЙ"
-
 
     # =====================================================
     # EXCEL
@@ -742,8 +638,8 @@ def submit():
                 "%Y-%m-%d %H:%M:%S"
             ),
 
-         "Шалгалтын төрөл":
-        exam_type,
+        "Шалгалтын төрөл":
+            exam_type,
 
         "Овог нэр":
             name,
@@ -758,7 +654,6 @@ def submit():
             total
 
     }])
-
 
     if os.path.exists(
         RESULT_FILE
@@ -786,7 +681,6 @@ def submit():
 
         data = new_row
 
-
     # =====================================================
     # БАГАНА
     # =====================================================
@@ -802,19 +696,25 @@ def submit():
         ]
     ]
 
+    try:
 
-    data.to_excel(
-        RESULT_FILE,
-        index=False
-    )
+        data.to_excel(
+            RESULT_FILE,
+            index=False
+        )
 
+    except Exception as e:
+
+        print(
+            "Excel хадгалах алдаа:",
+            e
+        )
 
     # =====================================================
     # SESSION ЦЭВЭРЛЭХ
     # =====================================================
 
     session.clear()
-
 
     # =====================================================
     # ҮР ДҮН
@@ -838,12 +738,11 @@ def submit():
         result=result,
 
         pass_score=PASS_SCORE
-
     )
 
 
 # =========================================================
-# ERROR PAGE
+# ERROR
 # =========================================================
 
 @app.route("/error")
@@ -852,6 +751,203 @@ def error():
     return render_template(
         "error.html",
         message="Алдаа гарлаа."
+    )
+
+
+# =========================================================
+# ADMIN LOGIN
+# =========================================================
+
+@app.route(
+    "/admin",
+    methods=["GET", "POST"]
+)
+def admin():
+
+    if session.get(
+        "admin_logged_in"
+    ):
+
+        return redirect(
+            url_for("admin_results")
+        )
+
+    error_message = ""
+
+    if request.method == "POST":
+
+        password = request.form.get(
+            "password",
+            ""
+        )
+
+        if password == ADMIN_PASSWORD:
+
+            session["admin_logged_in"] = True
+
+            return redirect(
+                url_for("admin_results")
+            )
+
+        else:
+
+            error_message = "Нууц үг буруу байна."
+
+    return render_template(
+        "admin_login.html",
+        error=error_message
+    )
+
+
+# =========================================================
+# ADMIN - ҮР ДҮН ХАРАХ
+# =========================================================
+
+@app.route("/admin/results")
+def admin_results():
+
+    if not session.get(
+        "admin_logged_in"
+    ):
+
+        return redirect(
+            url_for("admin")
+        )
+
+    if os.path.exists(
+        RESULT_FILE
+    ):
+
+        try:
+
+            df = pd.read_excel(
+                RESULT_FILE
+            )
+
+            records = df.fillna(
+                ""
+            ).to_dict(
+                orient="records"
+            )
+
+        except Exception:
+
+            records = []
+
+    else:
+
+        records = []
+
+    return render_template(
+        "admin_results.html",
+        records=records
+    )
+
+
+# =========================================================
+# ADMIN - EXCEL ТАТАХ
+# =========================================================
+
+@app.route("/admin/download")
+def admin_download():
+
+    if not session.get(
+        "admin_logged_in"
+    ):
+
+        return redirect(
+            url_for("admin")
+        )
+
+    # Хэрэв файл байхгүй бол
+    if not os.path.exists(
+        RESULT_FILE
+    ):
+
+        df = pd.DataFrame(
+            columns=[
+                "Огноо",
+                "Шалгалтын төрөл",
+                "Овог нэр",
+                "Албан тушаал",
+                "Авсан оноо",
+                "Нийт оноо"
+            ]
+        )
+
+    else:
+
+        try:
+
+            df = pd.read_excel(
+                RESULT_FILE
+            )
+
+        except Exception:
+
+            df = pd.DataFrame(
+                columns=[
+                    "Огноо",
+                    "Шалгалтын төрөл",
+                    "Овог нэр",
+                    "Албан тушаал",
+                    "Авсан оноо",
+                    "Нийт оноо"
+                ]
+            )
+
+    # =====================================================
+    # MEMORY-Д EXCEL ҮҮСГЭНЭ
+    # =====================================================
+
+    output = BytesIO()
+
+    with pd.ExcelWriter(
+        output,
+        engine="openpyxl"
+    ) as writer:
+
+        df.to_excel(
+            writer,
+            index=False,
+            sheet_name="Шалгалтын үр дүн"
+        )
+
+    output.seek(0)
+
+    filename = (
+        "shalgalt_results_"
+        + datetime.now().strftime(
+            "%Y%m%d_%H%M%S"
+        )
+        + ".xlsx"
+    )
+
+    return send_file(
+        output,
+        as_attachment=True,
+        download_name=filename,
+        mimetype=(
+            "application/vnd.openxmlformats-officedocument"
+            ".spreadsheetml.sheet"
+        )
+    )
+
+
+# =========================================================
+# ADMIN LOGOUT
+# =========================================================
+
+@app.route("/admin/logout")
+def admin_logout():
+
+    session.pop(
+        "admin_logged_in",
+        None
+    )
+
+    return redirect(
+        url_for("admin")
     )
 
 
@@ -867,7 +963,6 @@ if __name__ == "__main__":
             5000
         )
     )
-
 
     app.run(
         host="0.0.0.0",
