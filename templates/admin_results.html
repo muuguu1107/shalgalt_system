@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="mn">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Шалгалтын үр дүн</title>
+
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+        rel="stylesheet"
+    >
+
+    <style>
+
+        body {
+            background: #f1f5f9;
+        }
+
+        .topbar {
+            background: linear-gradient(
+                135deg,
+                #0f172a,
+                #1d4ed8
+            );
+
+            color: white;
+            padding: 25px 0;
+        }
+
+        .card {
+            border: none;
+            border-radius: 18px;
+            box-shadow:
+                0 8px 30px
+                rgba(0,0,0,.08);
+        }
+
+        .table {
+            vertical-align: middle;
+        }
+
+        .badge-pass {
+            background: #16a34a;
+        }
+
+        .badge-fail {
+            background: #dc2626;
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+<div class="topbar">
+
+    <div class="container">
+
+        <div class="d-flex justify-content-between align-items-center">
+
+            <div>
+
+                <h2 class="mb-1">
+                    📊 Шалгалтын үр дүн
+                </h2>
+
+                <div>
+                    Admin хэсэг
+                </div>
+
+            </div>
+
+            <div>
+
+                <a
+                    href="/admin/download"
+                    class="btn btn-success me-2"
+                >
+                    📥 Excel татах
+                </a>
+
+                <a
+                    href="/admin/logout"
+                    class="btn btn-light"
+                >
+                    Гарах
+                </a>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<div class="container my-4">
+
+    <div class="card">
+
+        <div class="card-body">
+
+            {% if records %}
+
+            <div class="table-responsive">
+
+                <table class="table table-hover">
+
+                    <thead class="table-dark">
+
+                        <tr>
+
+                            <th>№</th>
+
+                            <th>Огноо</th>
+
+                            <th>Шалгалтын төрөл</th>
+
+                            <th>Овог нэр</th>
+
+                            <th>Албан тушаал</th>
+
+                            <th>Авсан оноо</th>
+
+                            <th>Нийт оноо</th>
+
+                            <th>Хувь</th>
+
+                            <th>Үр дүн</th>
+
+                        </tr>
+
+                    </thead>
+
+                    <tbody>
+
+                    {% for row in records %}
+
+                        {% set score = row["Авсан оноо"]|int %}
+                        {% set total = row["Нийт оноо"]|int %}
+
+                        {% if total > 0 %}
+                            {% set percentage = (score / total * 100)|round|int %}
+                        {% else %}
+                            {% set percentage = 0 %}
+                        {% endif %}
+
+                        <tr>
+
+                            <td>
+                                {{ loop.index }}
+                            </td>
+
+                            <td>
+                                {{ row["Огноо"] }}
+                            </td>
+
+                            <td>
+
+                                {% if row["Шалгалтын төрөл"] == "ААД" %}
+
+                                    <span class="badge bg-primary">
+                                        ААД
+                                    </span>
+
+                                {% else %}
+
+                                    <span class="badge bg-warning text-dark">
+                                        Нарядын систем
+                                    </span>
+
+                                {% endif %}
+
+                            </td>
+
+                            <td>
+                                <strong>
+                                    {{ row["Овог нэр"] }}
+                                </strong>
+                            </td>
+
+                            <td>
+                                {{ row["Албан тушаал"] }}
+                            </td>
+
+                            <td>
+                                <strong>
+                                    {{ score }}
+                                </strong>
+                            </td>
+
+                            <td>
+                                {{ total }}
+                            </td>
+
+                            <td>
+                                {{ percentage }}%
+                            </td>
+
+                            <td>
+
+                                {% if score >= 8 %}
+
+                                    <span class="badge badge-pass">
+                                        ТЭНЦСЭН
+                                    </span>
+
+                                {% else %}
+
+                                    <span class="badge badge-fail">
+                                        ТЭНЦЭЭГҮЙ
+                                    </span>
+
+                                {% endif %}
+
+                            </td>
+
+                        </tr>
+
+                    {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+            {% else %}
+
+                <div class="text-center py-5">
+
+                    <div style="font-size: 60px;">
+                        📋
+                    </div>
+
+                    <h4 class="mt-3">
+                        Одоогоор шалгалтын үр дүн алга
+                    </h4>
+
+                </div>
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>
