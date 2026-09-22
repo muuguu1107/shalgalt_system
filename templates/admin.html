@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Админ - Шалгалт</title>
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='style.css') }}"
+    >
+
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="card admin-card">
+
+        {% if not logged_in %}
+
+            <div class="logo">🔐</div>
+
+            <h1>Админ хэсэг</h1>
+
+            <p class="description">
+                Шалгалтын төлөв удирдах
+            </p>
+
+            {% if error %}
+                <div class="error-box">
+                    {{ error }}
+                </div>
+            {% endif %}
+
+            <form
+                method="POST"
+                action="{{ url_for('admin') }}"
+            >
+
+                <label>
+                    Нууц үг
+                </label>
+
+                <input
+                    type="password"
+                    name="password"
+                    placeholder="Нууц үгээ оруулна уу"
+                    required
+                >
+
+                <button
+                    type="submit"
+                    class="main-button"
+                >
+                    Нэвтрэх
+                </button>
+
+            </form>
+
+        {% else %}
+
+            <div class="logo">⚙️</div>
+
+            <h1>Шалгалтын удирдлага</h1>
+
+            {% if exam_open %}
+
+                <div class="status-open">
+                    🟢 ШАЛГАЛТ НЭЭЛТТЭЙ
+                </div>
+
+                <p class="admin-text">
+                    Одоогоор ажилтнууд шалгалт өгөх боломжтой.
+                </p>
+
+                <form
+                    method="POST"
+                    action="{{ url_for('admin_close') }}"
+                >
+
+                    <button
+                        type="submit"
+                        class="close-button"
+                    >
+                        🔴 ШАЛГАЛТ ХААХ
+                    </button>
+
+                </form>
+
+            {% else %}
+
+                <div class="status-closed">
+                    🔴 ШАЛГАЛТ ХААЛТТАЙ
+                </div>
+
+                <p class="admin-text">
+                    Одоогоор ажилтнууд шалгалт өгөх боломжгүй.
+                </p>
+
+                <form
+                    method="POST"
+                    action="{{ url_for('admin_open') }}"
+                >
+
+                    <button
+                        type="submit"
+                        class="open-button"
+                    >
+                        🟢 ШАЛГАЛТ НЭЭХ
+                    </button>
+
+                </form>
+
+            {% endif %}
+
+            <a
+                class="logout"
+                href="{{ url_for('admin_logout') }}"
+            >
+                Гарах
+            </a>
+
+        {% endif %}
+
+    </div>
+
+</div>
+
+</body>
+</html>

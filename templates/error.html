@@ -1,63 +1,49 @@
 <!DOCTYPE html>
 <html lang="mn">
-
 <head>
 
-<meta charset="UTF-8">
+    <meta charset="UTF-8">
 
-<meta
-name="viewport"
-content="width=device-width, initial-scale=1">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
-<title>Алдаа</title>
+    <title>Мэдэгдэл</title>
 
-<link
-href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
-rel="stylesheet">
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='style.css') }}"
+    >
 
 </head>
 
+<body>
 
-<body
-class="bg-light">
+<div class="container">
 
+    <div class="card">
 
-<div
-class="container"
-style="padding-top:100px">
+        <div class="logo">
+            ⚠️
+        </div>
 
+        <h1>Мэдэгдэл</h1>
 
-<div
-class="card shadow border-0 p-5 text-center">
+        <div class="error-box">
+            {{ message }}
+        </div>
 
+        <a
+            href="{{ url_for('index') }}"
+            class="main-button link-button"
+        >
+            БУЦАХ
+        </a>
 
-<h2 class="text-danger">
-⚠ Асуултын алдаа
-</h2>
-
-
-<p class="mt-3">
-
-{{ message }}
-
-</p>
-
-
-<a
-href="/"
-class="btn btn-primary">
-
-Буцах
-
-</a>
-
+    </div>
 
 </div>
-
-
-</div>
-
 
 </body>
-
 </html>
